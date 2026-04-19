@@ -1,8 +1,14 @@
 from __future__ import annotations
 
+import os
+import threading
+from contextlib import contextmanager
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
+from collections.abc import Iterator
 from typing import Any
+
+from .config import Settings
 
 
 @dataclass(frozen=True)
@@ -51,15 +57,19 @@ class StockHistory:
 
 
 class AKShareService:
-    def __init__(self, client: Any | None = None):
+    _proxy_lock = threading.Lock()
+
+    def __init__(self, client: Any | None = None, settings: Settings | None = None):
         if client is None:
             import akshare as ak
 
             client = ak
         self.client = client
+        self.settings = settings or Settings()
 
     def get_stock_snapshot(self, symbol: str) -> StockSnapshot:
-        df = self.client.stock_zh_a_spot_em()
+        with self._network_environment():
+            df = self.client.stock_zh_a_spot_em()
         row = _find_row(df, "代码", symbol)
         if row is None:
             raise ValueError(f"No AKShare snapshot found for symbol {symbol}")
@@ -81,13 +91,14 @@ class AKShareService:
         end_date: str,
         adjust: str = "qfq",
     ) -> StockHistory:
-        df = self.client.stock_zh_a_hist(
-            symbol=symbol,
-            period="daily",
-            start_date=start_date,
-            end_date=end_date,
-            adjust=adjust,
-        )
+        with self._network_environment():
+            df = self.client.stock_zh_a_hist(
+                symbol=symbol,
+                period="daily",
+                start_date=start_date,
+                end_date=end_date,
+                adjust=adjust,
+            )
         rows = [
             HistoryRow(
                 date=str(row.get("日期", "")),
@@ -110,7 +121,8 @@ class AKShareService:
         )
 
     def get_company_profile(self, symbol: str) -> dict[str, Any]:
-        df = self.client.stock_individual_info_em(symbol=symbol)
+        with self._network_environment():
+            df = self.client.stock_individual_info_em(symbol=symbol)
         profile = {"symbol": symbol, "source": "akshare.stock_individual_info_em", "fetched_at": _now()}
         for row in _records(df):
             key = row.get("item") or row.get("项目")
@@ -120,7 +132,8 @@ class AKShareService:
         return profile
 
     def get_financial_indicators(self, symbol: str, start_year: int | None = None) -> dict[str, Any]:
-        df = self.client.stock_financial_analysis_indicator(symbol=symbol)
+        with self._network_environment():
+            df = self.client.stock_financial_analysis_indicator(symbol=symbol)
         rows = _records(df)
         if start_year is not None:
             rows = [row for row in rows if str(row.get("日期", ""))[:4].isdigit() and int(str(row["日期"])[:4]) >= start_year]
@@ -130,6 +143,16 @@ class AKShareService:
             "fetched_at": _now(),
             "source": "akshare.stock_financial_analysis_indicator",
         }
+
+    @contextmanager
+    def _network_environment(self) -> Iterator[None]:
+        with self._proxy_lock:
+            saved = {key: os.environ.get(key) for key in _PROXY_ENV_KEYS}
+            try:
+                _apply_proxy_environment(self.settings)
+                yield
+            finally:
+                _restore_environment(saved)
 
 
 def _records(df: Any) -> list[dict[str, Any]]:
@@ -156,3 +179,37 @@ def _to_float(value: Any) -> float | None:
 
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+_PROXY_ENV_KEYS = (
+    "HTTP_PROXY",
+    "HTTPS_PROXY",
+    "ALL_PROXY",
+    "http_proxy",
+    "https_proxy",
+    "all_proxy",
+    "NO_PROXY",
+    "no_proxy",
+)
+
+
+def _apply_proxy_environment(settings: Settings) -> None:
+    proxy_url = settings.akshare_proxy_url
+    if proxy_url:
+        for key in ("HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "http_proxy", "https_proxy", "all_proxy"):
+            os.environ[key] = proxy_url
+        os.environ.pop("NO_PROXY", None)
+        os.environ.pop("no_proxy", None)
+        return
+
+    if settings.akshare_disable_system_proxy:
+        os.environ["NO_PROXY"] = "*"
+        os.environ["no_proxy"] = "*"
+
+
+def _restore_environment(saved: dict[str, str | None]) -> None:
+    for key, value in saved.items():
+        if value is None:
+            os.environ.pop(key, None)
+        else:
+            os.environ[key] = value

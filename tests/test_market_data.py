@@ -1,5 +1,8 @@
+import os
+
 import pandas as pd
 
+from a_stock_agent.config import Settings
 from a_stock_agent.market_data import AKShareService
 
 
@@ -62,3 +65,49 @@ def test_stock_history_normalizes_rows_and_preserves_adjustment():
     assert history.symbol == "600519"
     assert history.adjust == "qfq"
     assert history.rows[0].close == 1610.0
+
+
+class EnvCapturingAKShare(FakeAKShare):
+    def __init__(self):
+        self.captured_env = {}
+
+    def stock_zh_a_spot_em(self):
+        self.captured_env = {
+            "HTTP_PROXY": os.environ.get("HTTP_PROXY"),
+            "HTTPS_PROXY": os.environ.get("HTTPS_PROXY"),
+            "ALL_PROXY": os.environ.get("ALL_PROXY"),
+            "NO_PROXY": os.environ.get("NO_PROXY"),
+            "no_proxy": os.environ.get("no_proxy"),
+        }
+        return super().stock_zh_a_spot_em()
+
+
+def test_akshare_proxy_url_is_applied_only_during_call(monkeypatch):
+    monkeypatch.delenv("HTTP_PROXY", raising=False)
+    monkeypatch.delenv("HTTPS_PROXY", raising=False)
+    monkeypatch.delenv("ALL_PROXY", raising=False)
+    client = EnvCapturingAKShare()
+    settings = Settings(akshare_proxy_url="http://proxy.example:8080")
+    service = AKShareService(client=client, settings=settings)
+
+    service.get_stock_snapshot("600519")
+
+    assert client.captured_env["HTTP_PROXY"] == "http://proxy.example:8080"
+    assert client.captured_env["HTTPS_PROXY"] == "http://proxy.example:8080"
+    assert client.captured_env["ALL_PROXY"] == "http://proxy.example:8080"
+    assert client.captured_env["NO_PROXY"] is None
+    assert os.environ.get("HTTP_PROXY") is None
+
+
+def test_akshare_can_disable_system_proxy_during_call(monkeypatch):
+    monkeypatch.delenv("NO_PROXY", raising=False)
+    monkeypatch.delenv("no_proxy", raising=False)
+    client = EnvCapturingAKShare()
+    settings = Settings(akshare_disable_system_proxy=True)
+    service = AKShareService(client=client, settings=settings)
+
+    service.get_stock_snapshot("600519")
+
+    assert client.captured_env["NO_PROXY"] == "*"
+    assert client.captured_env["no_proxy"] == "*"
+    assert os.environ.get("NO_PROXY") is None

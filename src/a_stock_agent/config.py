@@ -45,6 +45,14 @@ class Settings(BaseSettings):
 
     enable_live_akshare: bool = True
     enable_adk_web_ui: bool = False
+    akshare_proxy_url: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("akshare_proxy_url", "AKSHARE_PROXY_URL"),
+    )
+    akshare_disable_system_proxy: bool = Field(
+        default=True,
+        validation_alias=AliasChoices("akshare_disable_system_proxy", "AKSHARE_DISABLE_SYSTEM_PROXY"),
+    )
 
     @model_validator(mode="before")
     @classmethod
