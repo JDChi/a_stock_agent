@@ -111,6 +111,15 @@ LLM_BASE_URL=https://api.minimaxi.com/anthropic
 LLM_AUTH_TOKEN=replace-me
 ```
 
+The Python project also understands the earlier Go demo variable names:
+
+```env
+ANTHROPIC_BASE_URL=https://api.minimaxi.com/anthropic
+ANTHROPIC_API_KEY=replace-me
+ANTHROPIC_AUTH_TOKEN=
+ANTHROPIC_MODEL=MiniMax-M2.7-highspeed
+```
+
 ## AKShare note
 
 AKShare data is suitable for research workflows, but public data sources can be

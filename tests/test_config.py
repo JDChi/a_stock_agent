@@ -4,6 +4,20 @@ from a_stock_agent.config import Settings
 from a_stock_agent.llm import build_model_config
 
 
+def test_legacy_anthropic_env_from_go_demo_is_supported(monkeypatch):
+    monkeypatch.setenv("ANTHROPIC_BASE_URL", "https://api.minimaxi.com/anthropic")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "legacy-secret")
+    monkeypatch.setenv("ANTHROPIC_MODEL", "MiniMax-M2.7-highspeed")
+
+    settings = Settings(_env_file=None)
+    model_config = build_model_config(settings)
+
+    assert settings.llm_provider == "anthropic"
+    assert model_config.model == "anthropic/MiniMax-M2.7-highspeed"
+    assert model_config.api_base == "https://api.minimaxi.com/anthropic"
+    assert model_config.api_key == "legacy-secret"
+
+
 def test_openai_compatible_config_maps_to_litellm_model_name():
     settings = Settings(
         llm_provider="openai",
