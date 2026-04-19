@@ -125,16 +125,3 @@ ANTHROPIC_MODEL=MiniMax-M2.7-highspeed
 AKShare data is suitable for research workflows, but public data sources can be
 delayed, unavailable, or change response fields. The service layer normalizes
 AKShare output before it reaches tools or APIs.
-
-Some AKShare endpoints, especially Eastmoney realtime pagination, can be
-limited by network path or source IP. The service layer supports explicit proxy
-configuration:
-
-```env
-AKSHARE_PROXY_URL=http://user:password@proxy-host:proxy-port
-AKSHARE_DISABLE_SYSTEM_PROXY=true
-```
-
-`AKSHARE_DISABLE_SYSTEM_PROXY=true` prevents `requests` from accidentally using
-a desktop/system proxy such as `127.0.0.1:7897`. If `AKSHARE_PROXY_URL` is set,
-the service applies it only while AKShare calls are running.
