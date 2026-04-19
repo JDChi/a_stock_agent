@@ -1,0 +1,52 @@
+services:
+  api:
+    build: .
+    environment:
+      APP_NAME: ${APP_NAME:-a-stock-agent}
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      DATABASE_PATH: ${DATABASE_PATH:-data/a_stock_agent.sqlite3}
+      BOOKS_DIR: ${BOOKS_DIR:-books}
+      MODELS_DIR: ${MODELS_DIR:-data/models}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-BAAI/bge-base-zh-v1.5}
+      EMBEDDING_DIMENSIONS: ${EMBEDDING_DIMENSIONS:-768}
+      LLM_PROVIDER: ${LLM_PROVIDER:-anthropic}
+      LLM_MODEL: ${LLM_MODEL:-MiniMax-M2.7-highspeed}
+      LLM_BASE_URL: ${LLM_BASE_URL:-https://api.minimaxi.com/anthropic}
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      LLM_AUTH_TOKEN: ${LLM_AUTH_TOKEN:-}
+      ENABLE_LIVE_AKSHARE: ${ENABLE_LIVE_AKSHARE:-true}
+      ENABLE_ADK_WEB_UI: ${ENABLE_ADK_WEB_UI:-false}
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+      - ./books:/app/books
+      - ./models:/app/models
+    command: ["uv", "run", "a-stock-agent-api"]
+
+  adk-web:
+    build: .
+    profiles:
+      - dev-ui
+    environment:
+      APP_NAME: ${APP_NAME:-a-stock-agent}
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      DATABASE_PATH: ${DATABASE_PATH:-data/a_stock_agent.sqlite3}
+      BOOKS_DIR: ${BOOKS_DIR:-books}
+      MODELS_DIR: ${MODELS_DIR:-data/models}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-BAAI/bge-base-zh-v1.5}
+      EMBEDDING_DIMENSIONS: ${EMBEDDING_DIMENSIONS:-768}
+      LLM_PROVIDER: ${LLM_PROVIDER:-anthropic}
+      LLM_MODEL: ${LLM_MODEL:-MiniMax-M2.7-highspeed}
+      LLM_BASE_URL: ${LLM_BASE_URL:-https://api.minimaxi.com/anthropic}
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      LLM_AUTH_TOKEN: ${LLM_AUTH_TOKEN:-}
+      ENABLE_LIVE_AKSHARE: ${ENABLE_LIVE_AKSHARE:-true}
+      ENABLE_ADK_WEB_UI: "true"
+    ports:
+      - "8001:8000"
+    volumes:
+      - ./data:/app/data
+      - ./books:/app/books
+      - ./models:/app/models
+    command: ["uv", "run", "adk", "web", "src/a_stock_agent/adk_app", "--host", "0.0.0.0", "--port", "8000"]
