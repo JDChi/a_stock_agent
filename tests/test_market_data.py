@@ -1,5 +1,6 @@
 import pandas as pd
 
+from a_stock_agent.config import Settings
 from a_stock_agent.market_data import AKShareService
 
 
@@ -62,3 +63,43 @@ def test_stock_history_normalizes_rows_and_preserves_adjustment():
     assert history.symbol == "600519"
     assert history.adjust == "qfq"
     assert history.rows[0].close == 1610.0
+
+
+def test_akshare_proxy_patch_installs_with_configured_allowlist(monkeypatch):
+    calls = []
+
+    def fake_install_patch(auth_ip, auth_token="", retry=30, hook_domains=None):
+        calls.append(
+            {
+                "auth_ip": auth_ip,
+                "auth_token": auth_token,
+                "retry": retry,
+                "hook_domains": hook_domains,
+            }
+        )
+
+    monkeypatch.setattr("a_stock_agent.market_data._install_akshare_proxy_patch", fake_install_patch)
+    settings = Settings(
+        akshare_proxy_patch_enabled=True,
+        akshare_proxy_patch_gateway="101.201.173.125",
+        akshare_proxy_patch_token="token",
+        akshare_proxy_patch_retry=12,
+        akshare_proxy_patch_hook_urls=[
+            "https://82.push2.eastmoney.com/api/qt/clist/get",
+            "https://push2his.eastmoney.com/api/qt/stock/kline/get",
+        ],
+    )
+
+    AKShareService(client=FakeAKShare(), settings=settings)
+
+    assert calls == [
+        {
+            "auth_ip": "101.201.173.125",
+            "auth_token": "token",
+            "retry": 12,
+            "hook_domains": [
+                "https://82.push2.eastmoney.com/api/qt/clist/get",
+                "https://push2his.eastmoney.com/api/qt/stock/kline/get",
+            ],
+        }
+    ]

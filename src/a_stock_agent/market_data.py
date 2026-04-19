@@ -4,6 +4,8 @@ from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from typing import Any
 
+from .config import Settings, get_settings
+
 
 @dataclass(frozen=True)
 class StockSnapshot:
@@ -51,7 +53,9 @@ class StockHistory:
 
 
 class AKShareService:
-    def __init__(self, client: Any | None = None):
+    def __init__(self, client: Any | None = None, settings: Settings | None = None):
+        self.settings = settings or get_settings()
+        install_akshare_proxy_patch_if_enabled(self.settings)
         if client is None:
             import akshare as ak
 
@@ -156,3 +160,49 @@ def _to_float(value: Any) -> float | None:
 
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+_PATCH_INSTALLED_KEY: tuple[str, str, int, tuple[str, ...]] | None = None
+
+
+def install_akshare_proxy_patch_if_enabled(settings: Settings) -> None:
+    global _PATCH_INSTALLED_KEY
+
+    if not settings.akshare_proxy_patch_enabled:
+        return
+    if not settings.akshare_proxy_patch_token:
+        return
+
+    hook_urls = tuple(settings.akshare_proxy_patch_hook_urls)
+    patch_key = (
+        settings.akshare_proxy_patch_gateway,
+        settings.akshare_proxy_patch_token,
+        settings.akshare_proxy_patch_retry,
+        hook_urls,
+    )
+    if _PATCH_INSTALLED_KEY == patch_key:
+        return
+
+    _install_akshare_proxy_patch(
+        auth_ip=settings.akshare_proxy_patch_gateway,
+        auth_token=settings.akshare_proxy_patch_token,
+        retry=settings.akshare_proxy_patch_retry,
+        hook_domains=list(hook_urls),
+    )
+    _PATCH_INSTALLED_KEY = patch_key
+
+
+def _install_akshare_proxy_patch(
+    auth_ip: str,
+    auth_token: str = "",
+    retry: int = 30,
+    hook_domains: list[str] | None = None,
+) -> None:
+    import akshare_proxy_patch
+
+    akshare_proxy_patch.install_patch(
+        auth_ip,
+        auth_token=auth_token,
+        retry=retry,
+        hook_domains=hook_domains,
+    )

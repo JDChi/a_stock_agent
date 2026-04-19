@@ -1,8 +1,8 @@
 from pathlib import Path
-from typing import Any
+from typing import Annotated, Any
 
-from pydantic import AliasChoices, Field, model_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import AliasChoices, Field, field_validator, model_validator
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -10,6 +10,7 @@ class Settings(BaseSettings):
         env_file=".env",
         env_file_encoding="utf-8",
         extra="ignore",
+        populate_by_name=True,
     )
 
     app_name: str = "a-stock-agent"
@@ -45,6 +46,42 @@ class Settings(BaseSettings):
 
     enable_live_akshare: bool = True
     enable_adk_web_ui: bool = False
+    akshare_proxy_patch_enabled: bool = Field(
+        default=False,
+        validation_alias=AliasChoices("akshare_proxy_patch_enabled", "AKSHARE_PROXY_PATCH_ENABLED"),
+    )
+    akshare_proxy_patch_gateway: str = Field(
+        default="101.201.173.125",
+        validation_alias=AliasChoices("akshare_proxy_patch_gateway", "AKSHARE_PROXY_PATCH_GATEWAY"),
+    )
+    akshare_proxy_patch_token: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("akshare_proxy_patch_token", "AKSHARE_PROXY_PATCH_TOKEN"),
+    )
+    akshare_proxy_patch_retry: int = Field(
+        default=30,
+        validation_alias=AliasChoices("akshare_proxy_patch_retry", "AKSHARE_PROXY_PATCH_RETRY"),
+    )
+    akshare_proxy_patch_hook_urls: Annotated[list[str], NoDecode] = Field(
+        default_factory=lambda: [
+            "https://82.push2.eastmoney.com/api/qt/clist/get",
+            "https://push2.eastmoney.com/api/qt/stock/get",
+            "https://17.push2.eastmoney.com/api/qt/clist/get",
+            "https://push2his.eastmoney.com/api/qt/stock/kline/get",
+            "https://push2his.eastmoney.com/api/qt/stock/trends2/get",
+            "https://push2.eastmoney.com/api/qt/clist/get",
+            "https://push2his.eastmoney.com/api/qt/stock/fflow/daykline/get",
+            "http://push2.eastmoney.com/api/qt/clist/get",
+        ],
+        validation_alias=AliasChoices("akshare_proxy_patch_hook_urls", "AKSHARE_PROXY_PATCH_HOOK_URLS"),
+    )
+
+    @field_validator("akshare_proxy_patch_hook_urls", mode="before")
+    @classmethod
+    def parse_akshare_proxy_patch_hook_urls(cls, value: Any) -> Any:
+        if isinstance(value, str):
+            return [item.strip() for item in value.split(",") if item.strip()]
+        return value
 
     @model_validator(mode="before")
     @classmethod
@@ -57,6 +94,7 @@ class Settings(BaseSettings):
             "anthropic_api_key": "llm_api_key",
             "anthropic_auth_token": "llm_auth_token",
             "anthropic_model": "llm_model",
+            "akshare_proxy_patch_hook_domains": "akshare_proxy_patch_hook_urls",
         }
         for old_key, new_key in aliases.items():
             if not data.get(new_key) and data.get(old_key):

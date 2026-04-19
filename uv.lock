@@ -19,6 +19,7 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "akshare" },
+    { name = "akshare-proxy-patch" },
     { name = "beautifulsoup4" },
     { name = "ebooklib" },
     { name = "fastapi" },
@@ -46,6 +47,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "akshare", specifier = ">=1.16.0" },
+    { name = "akshare-proxy-patch", specifier = "==0.2.13" },
     { name = "beautifulsoup4", specifier = ">=4.12.0" },
     { name = "ebooklib", specifier = ">=0.18" },
     { name = "fastapi", specifier = ">=0.115.0" },
@@ -256,6 +258,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/d0/f3/e9ad0481f876f9d9b1994a399375fb1f256e3b54012d1db0b24d142fd339/akshare-1.18.55.tar.gz", hash = "sha256:d4d117f640f4b69d29dcd259409c408c36b849c483565faabb885791156f2cc2", size = 879017, upload-time = "2026-04-12T09:34:16.461Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/93/33/5b4216575c97f6450e41570ae4c7ad2d8e7bf20a417836b1082f2761d331/akshare-1.18.55-py3-none-any.whl", hash = "sha256:6ac4af6cebcc0b522961ebf967fef5c303408069baeef526cea58991f65c5531", size = 1100763, upload-time = "2026-04-12T09:34:14.191Z" },
+]
+
+[[package]]
+name = "akshare-proxy-patch"
+version = "0.2.13"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "requests" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/4b/78/6b22f9c595863aab05c57f6545858d2163310971135675c2bf7d1b8c5e8d/akshare_proxy_patch-0.2.13.tar.gz", hash = "sha256:9d95cefad10680e08ecad28bff0d0e3e406f281a7cf44b71d77b8c6026fc3e19", size = 4753, upload-time = "2026-03-14T00:46:10.449Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a5/49/df0b27c28f97cd6d6e56dc6fd79b18709ed3709a26e372216af88c148700/akshare_proxy_patch-0.2.13-py3-none-any.whl", hash = "sha256:d9cdcd42ffbfc0497433646e9de33f4fa7b286130e677c0c134c00600b37c281", size = 4815, upload-time = "2026-03-14T00:46:09.183Z" },
 ]
 
 [[package]]

@@ -125,3 +125,15 @@ ANTHROPIC_MODEL=MiniMax-M2.7-highspeed
 AKShare data is suitable for research workflows, but public data sources can be
 delayed, unavailable, or change response fields. The service layer normalizes
 AKShare output before it reaches tools or APIs.
+
+For Eastmoney endpoints that require the `akshare-proxy-patch` gateway, enable
+the patch explicitly in `.env`. Only the configured URL allowlist is hooked;
+other AKShare requests are left untouched.
+
+```env
+AKSHARE_PROXY_PATCH_ENABLED=true
+AKSHARE_PROXY_PATCH_GATEWAY=101.201.173.125
+AKSHARE_PROXY_PATCH_TOKEN=replace-me
+AKSHARE_PROXY_PATCH_RETRY=30
+AKSHARE_PROXY_PATCH_HOOK_URLS=https://82.push2.eastmoney.com/api/qt/clist/get,https://push2.eastmoney.com/api/qt/stock/get,https://17.push2.eastmoney.com/api/qt/clist/get,https://push2his.eastmoney.com/api/qt/stock/kline/get,https://push2his.eastmoney.com/api/qt/stock/trends2/get,https://push2.eastmoney.com/api/qt/clist/get,https://push2his.eastmoney.com/api/qt/stock/fflow/daykline/get,http://push2.eastmoney.com/api/qt/clist/get
+```
